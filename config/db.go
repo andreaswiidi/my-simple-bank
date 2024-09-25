@@ -15,7 +15,7 @@ func ConnectDataBase() *gorm.DB {
 		panic(err.Error())
 	}
 
-	db.AutoMigrate(&models.TransactionHistory{}, &models.TransfersHistory{}, &models.User{})
+	db.AutoMigrate(&models.TransactionHistory{}, &models.TransfersHistory{}, &models.User{}, &models.AccountBank{})
 
 	return db
 }
