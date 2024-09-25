@@ -17,5 +17,5 @@ type User struct {
 	UpdatedAt *time.Time `json:"updated_at"`
 	IsDeleted bool       `gorm:"not null;default:false"`
 	// TransactionHistory []TransactionHistory `gorm:"foreignKey:UserID"`
-	AccountBank *AccountBank `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	AccountBank *AccountBank `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"accountBank"`
 }

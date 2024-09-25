@@ -40,18 +40,22 @@ func createRandomUser() (*models.User, models.User, error) {
 }
 
 func TestFindUserByUsername(t *testing.T) {
-	newUser, _, err := createRandomUser()
-	require.NoError(t, err)
-	require.NotEmpty(t, newUser)
+	// newUser, _, err := createRandomUser()
+	// require.NoError(t, err)
+	require.NotEmpty(t, userForTest)
 
-	userFromRepo, err := testRepo.USER.FindUserByUsername(newUser.Username)
+	userFromRepo, err := testRepo.USER.FindUserByUsername(userForTest.Username)
 	require.NoError(t, err)
 	require.NotEmpty(t, userFromRepo)
 
-	require.Equal(t, newUser.Username, userFromRepo.Username)
-	require.Equal(t, newUser.Email, userFromRepo.Email)
-	require.Equal(t, newUser.Password, userFromRepo.Password)
-	require.WithinDuration(t, newUser.CreatedAt, userFromRepo.CreatedAt, time.Second)
+	if userFromRepo.AccountBank != nil {
+		require.Equal(t, userFromRepo.AccountBank.UserID, userFromRepo.ID)
+	}
+
+	require.Equal(t, userForTest.Username, userFromRepo.Username)
+	require.Equal(t, userForTest.Email, userFromRepo.Email)
+	require.Equal(t, userForTest.Password, userFromRepo.Password)
+	require.WithinDuration(t, userForTest.CreatedAt, userFromRepo.CreatedAt, time.Second)
 }
 
 func TestUpdateUserByUsername(t *testing.T) {

@@ -26,7 +26,7 @@ func (u *User) FindAllUsers() ([]models.User, error) {
 
 func (u *User) FindUserByUsername(username string) (*models.User, error) {
 	var user models.User
-	result := u.db.Where("username = ? AND is_deleted = ?", username, false).First(&user)
+	result := u.db.Preload("AccountBank").Where("username = ? AND is_deleted = ?", username, false).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
