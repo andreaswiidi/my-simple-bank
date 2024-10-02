@@ -15,9 +15,18 @@ func NewAccountBankRepository(db *gorm.DB) AccountBank {
 	}
 }
 
-func (ab *AccountBank) CreateAccountBank(userID int64) (*models.AccountBank, error) {
-	var account models.AccountBank
-	account.UserID = userID
-	result := ab.db.Create(&account)
-	return &account, result.Error
+func (ab *AccountBank) CreateAccountBank(acc *models.AccountBank) (*models.AccountBank, error) {
+	result := ab.db.Create(&acc)
+	return acc, result.Error
 }
+
+func (u *AccountBank) UpdateAccountBank(updatedAccount *models.AccountBank) (*models.AccountBank, error) {
+	// Save changes
+	result := u.db.Save(updatedAccount)
+	if result.Error != nil {
+		return updatedAccount, result.Error
+	}
+	return updatedAccount, nil
+}
+
+// func (ab *AccountBank) ReadAcc

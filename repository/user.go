@@ -33,9 +33,9 @@ func (u *User) FindUserByUsername(username string) (*models.User, error) {
 	return &user, nil
 }
 
-func (u *User) CreateUser(user models.User) (*models.User, error) {
-	result := u.db.Create(&user)
-	return &user, result.Error
+func (u *User) CreateUser(user *models.User) (*models.User, error) {
+	result := u.db.Create(user)
+	return user, result.Error
 }
 
 func (u *User) EditUser(updatedUser *models.User) (*models.User, error) {

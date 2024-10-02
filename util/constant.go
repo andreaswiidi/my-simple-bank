@@ -1,0 +1,4 @@
+package util
+
+const TRANSACTION_TYPE_TRANSFER string = "TRANSFER"
+const TRANSACTION_TYPE_PAYMENT string = "PAYMENT"

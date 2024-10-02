@@ -22,9 +22,9 @@ func TestCreateUser(t *testing.T) {
 	require.NotZero(t, newUser.CreatedAt)
 }
 
-func createRandomUser() (*models.User, models.User, error) {
+func createRandomUser() (*models.User, *models.User, error) {
 	randomName := util.RandomOwner()
-	arg := models.User{
+	arg := &models.User{
 		FullName:  randomName,
 		Username:  randomName,
 		Email:     randomName + "@mail.com",

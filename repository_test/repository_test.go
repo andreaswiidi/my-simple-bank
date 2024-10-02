@@ -31,14 +31,16 @@ func TestMain(m *testing.M) {
 
 	randomName := util.RandomOwner()
 
-	arg := models.User{
+	userForTest = &models.User{
 		FullName:  randomName,
 		Username:  randomName,
 		Email:     randomName + "@mail.com",
 		Password:  randomName,
 		CreatedAt: time.Now(),
 	}
-	userForTest, err = testRepo.USER.CreateUser(arg)
+	createdUser, err := testRepo.USER.CreateUser(userForTest)
+
+	userForTest = createdUser
 
 	if err != nil {
 		os.Exit(1)

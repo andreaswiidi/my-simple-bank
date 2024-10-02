@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/andreaswiidi/my-simple-bank/models"
+	"github.com/andreaswiidi/my-simple-bank/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,12 +17,30 @@ import (
 func TestCreateAccount(t *testing.T) {
 	require.NotEmpty(t, userForTest)
 
-	newBankAccount, err := testRepo.ACCOUNTBANK.CreateAccountBank(userForTest.ID)
+	newBankAccount, arg, err := createRandomAccount(userForTest.ID)
 	require.NoError(t, err)
 
-	require.Equal(t, userForTest.ID, newBankAccount.UserID)
 	require.NotZero(t, newBankAccount.ID)
+	require.Equal(t, userForTest.ID, newBankAccount.UserID)
+	require.Equal(t, newBankAccount.Balance, arg.Balance)
+	require.Equal(t, newBankAccount.Currency, arg.Currency)
 	require.NotZero(t, newBankAccount.CreatedAt)
+}
+
+func createRandomAccount(userId int64) (*models.AccountBank, *models.AccountBank, error) {
+	randomNumber := util.RandomMoney()
+	randomCurrency := util.RandomCurrency()
+
+	arg := &models.AccountBank{
+		UserID:   userId,
+		Balance:  randomNumber,
+		Currency: randomCurrency,
+	}
+
+	newBankAccount, err := testRepo.ACCOUNTBANK.CreateAccountBank(arg)
+
+	return newBankAccount, arg, err
+
 }
 
 func TestGetUserandAccount(t *testing.T) {
