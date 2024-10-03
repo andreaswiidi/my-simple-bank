@@ -144,12 +144,75 @@ func TestTransaction(t *testing.T) {
 	t.Logf("Money Account B After : %d", accountForTransactionB.Balance)
 }
 
-// func TestDeadlockTransaction(t *testing.T) {
-// 	err := prepareTransaction()
-// 	require.NoError(t, err)
-// 	amount := int64(10)
+func TestRaceConditionTransaction(t *testing.T) {
+	err := prepareTransaction()
+	require.NoError(t, err)
+	amount := int64(10)
+	count := 5
 
-// }
+	errs := make(chan error)
+	results := make(chan models.TransfersHistory)
+
+	for i := 0; i < count; i++ {
+		go func() {
+
+			accountForTransactionA.Balance = accountForTransactionA.Balance + amount
+			accountForTransactionA, err = testRepo.ACCOUNTBANK.UpdateAccountBank(accountForTransactionA)
+			// t.Logf("Money Account A Update : %d", accountForTransactionA.Balance)
+			require.NoError(t, err)
+
+			accountForTransactionB.Balance = accountForTransactionB.Balance - amount
+			accountForTransactionB, err := testRepo.ACCOUNTBANK.UpdateAccountBank(accountForTransactionB)
+			// t.Logf("Money Account B Update : %d", accountForTransactionB.Balance)
+			require.NoError(t, err)
+
+			//make transfer
+			makeTransfer := models.TransfersHistory{
+				FromAccountID: accountForTransactionB.UserID,
+				ToAccountID:   accountForTransactionA.UserID,
+				Amount:        amount,
+			}
+
+			transferHistory, err := testRepo.TRANSFERHISTORY.CreateTransferHistory(makeTransfer)
+			require.NoError(t, err)
+			require.NotEmpty(t, transferHistory)
+
+			makeTransactionA := models.TransactionHistory{
+				AccountBankID:     accountForTransactionA.ID,
+				TransactionType:   util.TRANSACTION_TYPE_TRANSFER,
+				TransferHistoryID: transferHistory.ID,
+				Amount:            amount,
+			}
+			transactionA, err := testRepo.TRANSACTIONHISTORY.CreateTransaction(makeTransactionA)
+			require.NoError(t, err)
+			require.NotEmpty(t, transactionA)
+
+			makeTransactionB := models.TransactionHistory{
+				AccountBankID:     accountForTransactionA.ID,
+				TransactionType:   util.TRANSACTION_TYPE_TRANSFER,
+				TransferHistoryID: transferHistory.ID,
+				Amount:            -amount,
+			}
+			transactionB, err := testRepo.TRANSACTIONHISTORY.CreateTransaction(makeTransactionB)
+			require.NoError(t, err)
+			require.NotEmpty(t, transactionB)
+
+			errs <- err
+			results <- *transferHistory
+		}()
+	}
+
+	for i := 0; i < count; i++ {
+		err := <-errs
+		require.NoError(t, err)
+
+		result := <-results
+		require.NotEmpty(t, result)
+		t.Logf("Money Account A After : %d", accountForTransactionA.Balance)
+		t.Logf("Money Account B After : %d", accountForTransactionB.Balance)
+	}
+
+}
 
 // func makeTransaction(toAccount *models.AccountBank, fromAccount *models.AccountBank,ammout int64) error {
 // 	//make transfer
