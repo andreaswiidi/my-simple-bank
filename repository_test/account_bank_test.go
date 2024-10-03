@@ -27,11 +27,11 @@ func TestCreateAccount(t *testing.T) {
 	require.NotZero(t, newBankAccount.CreatedAt)
 }
 
-func createRandomAccount(userId int64) (*models.AccountBank, *models.AccountBank, error) {
+func createRandomAccount(userId int64) (*models.AccountBank, models.AccountBank, error) {
 	randomNumber := util.RandomMoney()
 	randomCurrency := util.RandomCurrency()
 
-	arg := &models.AccountBank{
+	arg := models.AccountBank{
 		UserID:   userId,
 		Balance:  randomNumber,
 		Currency: randomCurrency,

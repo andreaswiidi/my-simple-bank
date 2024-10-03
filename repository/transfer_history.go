@@ -15,9 +15,24 @@ func NewTransferHistoryRepository(db *gorm.DB) TransferHistory {
 	}
 }
 
-func (th *TransferHistory) CreateTransferHistory(transfer *models.TransfersHistory) (*models.TransfersHistory, error) {
-	result := th.db.Create(transfer)
-	return transfer, result.Error
+func (th *TransferHistory) CreateTransferHistory(transfer models.TransfersHistory) (*models.TransfersHistory, error) {
+	err := th.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Create(&transfer)
+		if result.Error != nil {
+			// If there's an error, rollback the transaction
+			return result.Error
+		}
+		return nil
+	})
+
+	if err != nil {
+		return &transfer, err
+	}
+
+	return &transfer, nil
+
+	// result := th.db.Create(transfer)
+	// return transfer, result.Error
 }
 
 func (th *TransferHistory) GetTransferHistoryByTransactioID(accountId int64) (*models.TransfersHistory, error) {

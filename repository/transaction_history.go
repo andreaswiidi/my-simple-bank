@@ -15,9 +15,22 @@ func NewTransactionHistoryRepository(db *gorm.DB) TransactionHistory {
 	}
 }
 
-func (th *TransactionHistory) CreateTransaction(transaction *models.TransactionHistory) (*models.TransactionHistory, error) {
-	result := th.db.Create(transaction)
-	return transaction, result.Error
+func (th *TransactionHistory) CreateTransaction(transaction models.TransactionHistory) (*models.TransactionHistory, error) {
+	err := th.db.Transaction(func(tx *gorm.DB) error {
+		result := tx.Create(&transaction)
+		if result.Error != nil {
+			// If there's an error, rollback the transaction
+			return result.Error
+		}
+		return nil
+	})
+	if err != nil {
+		return &transaction, err
+	}
+
+	return &transaction, nil
+	// result := th.db.Create(transaction)
+	// return transaction, result.Error
 }
 
 func (th *TransactionHistory) GetTransactionHistoryByAccountId(accountId int64) (*models.TransactionHistory, error) {

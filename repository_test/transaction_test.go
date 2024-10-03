@@ -1,12 +1,15 @@
 package repository_test
 
 import (
+	// "fmt"
 	"testing"
 	"time"
 
 	"github.com/andreaswiidi/my-simple-bank/models"
 	"github.com/andreaswiidi/my-simple-bank/util"
 	"github.com/stretchr/testify/require"
+	// "gorm.io/gorm"
+	// "gorm.io/gorm/clause"
 )
 
 var userForTransactionA *models.User
@@ -37,17 +40,16 @@ func prepareTransaction() error {
 			randomNumber := util.RandomMoney()
 			randomCurrency := util.RandomCurrency()
 
-			argAcc := &models.AccountBank{
+			argAcc := models.AccountBank{
 				UserID:   userForTransactionA.ID,
 				Balance:  randomNumber,
 				Currency: randomCurrency,
 			}
 
-			argAcc, err = testRepo.ACCOUNTBANK.CreateAccountBank(argAcc)
+			accountForTransactionA, err = testRepo.ACCOUNTBANK.CreateAccountBank(argAcc)
 			if err != nil {
 				return err
 			}
-			accountForTransactionA = argAcc
 
 		}
 
@@ -73,18 +75,16 @@ func prepareTransaction() error {
 			randomNumber := util.RandomMoney()
 			randomCurrency := util.RandomCurrency()
 
-			argAccB := &models.AccountBank{
+			argAccB := models.AccountBank{
 				UserID:   userForTransactionB.ID,
 				Balance:  randomNumber,
 				Currency: randomCurrency,
 			}
 
-			argAccB, err = testRepo.ACCOUNTBANK.CreateAccountBank(argAccB)
+			accountForTransactionB, err = testRepo.ACCOUNTBANK.CreateAccountBank(argAccB)
 			if err != nil {
 				return err
 			}
-			accountForTransactionB = argAccB
-
 		}
 	}
 
@@ -96,55 +96,79 @@ func TestTransaction(t *testing.T) {
 	require.NoError(t, err)
 	amount := int64(10)
 
+	t.Logf("Money Account A : %d", accountForTransactionA.Balance)
+	t.Logf("Money Account B : %d", accountForTransactionB.Balance)
+
 	//make transfer
-	makeTransfer := &models.TransfersHistory{
+	makeTransfer := models.TransfersHistory{
 		FromAccountID: accountForTransactionB.UserID,
 		ToAccountID:   accountForTransactionA.UserID,
 		Amount:        amount,
 	}
 
-	makeTransfer, err = testRepo.TRANSFERHISTORY.CreateTransferHistory(makeTransfer)
+	transferHistory, err := testRepo.TRANSFERHISTORY.CreateTransferHistory(makeTransfer)
 	require.NoError(t, err)
-	require.NotEmpty(t, makeTransfer)
+	require.NotEmpty(t, transferHistory)
 
-	makeTransactionA := &models.TransactionHistory{
+	makeTransactionA := models.TransactionHistory{
 		AccountBankID:     accountForTransactionA.ID,
 		TransactionType:   util.TRANSACTION_TYPE_TRANSFER,
-		TransferHistoryID: makeTransfer.ID,
+		TransferHistoryID: transferHistory.ID,
 		Amount:            amount,
 	}
-	makeTransactionA, err = testRepo.TRANSACTIONHISTORY.CreateTransaction(makeTransactionA)
+	transactionA, err := testRepo.TRANSACTIONHISTORY.CreateTransaction(makeTransactionA)
 	require.NoError(t, err)
-	require.NotEmpty(t, makeTransactionA)
+	require.NotEmpty(t, transactionA)
 
 	accountForTransactionA.Balance = accountForTransactionA.Balance + amount
 	accountForTransactionA, err = testRepo.ACCOUNTBANK.UpdateAccountBank(accountForTransactionA)
+	// t.Logf("Money Account A Update : %d", accountForTransactionA.Balance)
 	require.NoError(t, err)
 
-	makeTransactionB := &models.TransactionHistory{
+	makeTransactionB := models.TransactionHistory{
 		AccountBankID:     accountForTransactionA.ID,
 		TransactionType:   util.TRANSACTION_TYPE_TRANSFER,
-		TransferHistoryID: makeTransfer.ID,
+		TransferHistoryID: transferHistory.ID,
 		Amount:            -amount,
 	}
-	makeTransactionB, err = testRepo.TRANSACTIONHISTORY.CreateTransaction(makeTransactionB)
+	transactionB, err := testRepo.TRANSACTIONHISTORY.CreateTransaction(makeTransactionB)
 	require.NoError(t, err)
-	require.NotEmpty(t, makeTransactionB)
+	require.NotEmpty(t, transactionB)
 
-	accountForTransactionA, err = testRepo.ACCOUNTBANK.UpdateAccountBank(accountForTransactionA)
+	accountForTransactionB.Balance = accountForTransactionB.Balance - amount
+	accountForTransactionB, err := testRepo.ACCOUNTBANK.UpdateAccountBank(accountForTransactionB)
+	// t.Logf("Money Account B Update : %d", accountForTransactionB.Balance)
 	require.NoError(t, err)
 
-	// errs := make(chan error)
-	// results := make(chan models.TransfersHistory)
-	// go func() {
-	// 	ctx := context.WithValue(context.Background(), txKey, txName)
-	// 	result, err := store.TransferTx(ctx, sqlc.TransferTxParams{
-	// 		FromAccountID: account1.ID,
-	// 		ToAccountID:   account2.ID,
-	// 		Amount:        amount,
-	// 	})
-
-	// 	errs <- err
-	// 	results <- result
-	// }()
+	t.Logf("Money Account A After : %d", accountForTransactionA.Balance)
+	t.Logf("Money Account B After : %d", accountForTransactionB.Balance)
 }
+
+// func TestDeadlockTransaction(t *testing.T) {
+// 	err := prepareTransaction()
+// 	require.NoError(t, err)
+// 	amount := int64(10)
+
+// }
+
+// func makeTransaction(toAccount *models.AccountBank, fromAccount *models.AccountBank,ammout int64) error {
+// 	//make transfer
+// 	return dbTest.Transaction(func(tx *gorm.DB) error {
+// 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", fromAccount.ID).First(&fromAccount).Error; err != nil {
+// 			return fmt.Errorf("failed to find and lock from account: %w", err)
+// 		}
+
+// 		if fromAccount.Balance < ammout {
+//             return fmt.Errorf("insufficient balance in from account")
+//         }
+// 		// Lock the toAccount for update
+//         if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("id = ?", toAccount.ID).First(&toAccount).Error; err != nil {
+//             return fmt.Errorf("failed to find and lock to account: %w", err)
+//         }
+
+// 		fromAccount.Balance -= ammout
+// 		if err := tx.Save(&fromAccount).Error; err != nil {
+//             return fmt.Errorf("failed to deduct amount from fromAccount: %w", err)
+//         }
+// 	})
+// }
